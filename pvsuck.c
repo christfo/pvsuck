@@ -7,7 +7,8 @@
 typedef unsigned int word;
 word at 0x2007 CONFIG = _XT_OSC & _WDT_OFF & _PWRTE_OFF & _BODEN_ON & _LVP_ON & _CPD_OFF & _WRT_ENABLE_ON & _DEBUG_ON & _CP_OFF;
 
-void isr() interrupt 0 {                                                                                                         /* interrupt service routine */
+void isr() interrupt 0 {
+    /* interrupt service routine */
     /* << insert interrupt code >> */
 }
 
@@ -22,7 +23,6 @@ void delay() {
 
 void main(void) {
     TRISB = 0;
-
     while (1) {
         PORTB = 0x0F;
 
