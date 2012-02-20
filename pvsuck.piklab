@@ -1,0 +1,12 @@
+<!DOCTYPE piklab>
+<piklab>
+  <general>
+    <device>16F877</device>
+    <tool>sdcc</tool>
+    <programmer>icd2_debugger</programmer>
+    <files>
+      <item>pvsuck.c</item>
+    </files>
+  </general>
+  <editors/>
+</piklab>

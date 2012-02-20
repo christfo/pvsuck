@@ -1,0 +1,10 @@
+*.adb
+*.cod
+*.cof
+*.hex
+*.lst
+*.map
+*.p
+*.o
+
+*~
