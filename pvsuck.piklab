@@ -7,6 +7,10 @@
     <files>
       <item>pvsuck.c</item>
     </files>
+    <watched_registers>
+      <item>6 2 </item>
+      <item>134 2 </item>
+    </watched_registers>
   </general>
   <editors/>
 </piklab>
