@@ -64,6 +64,5 @@ void main(void) {
     while (1) {
         print("Hello World\n");
         delay(1000);
-/* #include <usart.h> */
     }
 }
