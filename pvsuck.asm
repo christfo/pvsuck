@@ -1,7 +1,7 @@
 ;--------------------------------------------------------
 ; File Created by SDCC : free open source ANSI-C Compiler
 ; Version 2.9.0 #5416 (Feb  3 2010) (UNIX)
-; This file was generated Fri Mar 16 00:28:42 2012
+; This file was generated Mon Mar 26 13:49:50 2012
 ;--------------------------------------------------------
 ; PIC port for the 14-bit core
 ;--------------------------------------------------------
@@ -108,13 +108,17 @@
 ; global declarations
 ;--------------------------------------------------------
 	global	_delay
+	global	_adc_setup
 	global	_serial_setup_19200
+	global	_ad_aquire
+	global	_ad_monitor
 	global	_intr
 	global	_print
 	global	_main
 	global	_txring
 	global	_txring_in
 	global	_txring_out
+	global	_ad_result
 
 	global PSAVE
 	global SSAVE
@@ -157,6 +161,9 @@ STK00	res 1
 UD_pvsuck_0	udata
 _txring	res	16
 
+UD_pvsuck_1	udata
+_ad_result	res	2
+
 ;--------------------------------------------------------
 ; absolute symbol definitions
 ;--------------------------------------------------------
@@ -164,11 +171,17 @@ _txring	res	16
 ; compiler-defined variables
 ;--------------------------------------------------------
 UDL_pvsuck_0	udata
-r0x1014	res	1
+r0x1022	res	1
+r0x1021	res	1
+r0x1023	res	1
+r0x1024	res	1
+r0x101F	res	1
+r0x1020	res	1
 r0x1013	res	1
-r0x1015	res	1
-r0x1016	res	1
+r0x1014	res	1
 r0x1017	res	1
+r0x1016	res	1
+r0x1015	res	1
 r0x1018	res	1
 r0x1019	res	1
 r0x101A	res	1
@@ -192,6 +205,7 @@ _txring_out
 
 ID_pvsuck_2	code
 __str_0
+	retlw 0x20 ; ' '
 	retlw 0x48 ; 'H'
 	retlw 0x65 ; 'e'
 	retlw 0x6c ; 'l'
@@ -235,11 +249,11 @@ __sdcc_interrupt
 ;; ***	genLabel  2600
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:2283:genFunction *{*
-;; ***	genFunction  2285 curr label offset=9previous max_key=0 
+;; ***	genFunction  2285 curr label offset=21previous max_key=0 
 _intr	;Function start
 ; 0 exit points
 ; >>> gen.c:2340:genFunction
-	.line	38; "pvsuck.c"	void intr() interrupt 0 {
+	.line	70; "pvsuck.c"	void intr() interrupt 0 {
 	MOVWF	WSAVE
 ; >>> gen.c:2341:genFunction
 	SWAPF	STATUS,W
@@ -276,12 +290,12 @@ _intr	;Function start
 ;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
 ;;	_PIR1_bits
 ; >>> gen.c:5257:genUnpackBits
-	.line	39; "pvsuck.c"	if(TXIF) { // serial interrupt
+	.line	71; "pvsuck.c"	if(TXIF) { // serial interrupt
 	BANKSEL	_PIR1_bits
 	BTFSS	_PIR1_bits,4
 ; >>> gen.c:5258:genUnpackBits
-;; ***	popGetLabel  key=5, label offset 13
-	GOTO	_00118_DS_
+;; ***	popGetLabel  key=5, label offset 25
+	GOTO	_00130_DS_
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:3504:ifxForOp *{*
@@ -298,17 +312,17 @@ _intr	;Function start
 ; >>> gen.c:1361:mov2w
 ;;	1013
 ;;	1027  _txring_in   offset=0 - had to alloc by reg name
-	.line	40; "pvsuck.c"	if( txring_out != txring_in ) {
+	.line	72; "pvsuck.c"	if( txring_out != txring_in ) {
 	BANKSEL	_txring_in
 	MOVF	_txring_in,W
 ; >>> gen.c:3469:genCmpEq
 ;;	1013
 ;;	1029  _txring_out   offset=0
-	.line	41; "pvsuck.c"	txring_out = (txring_out + 1) & (RING_SZ-1);
+	.line	73; "pvsuck.c"	txring_out = (txring_out + 1) & (RING_SZ-1);
 	BANKSEL	_txring_out
 	XORWF	_txring_out,W
 	BTFSC	STATUS,2
-	GOTO	_00118_DS_
+	GOTO	_00130_DS_
 	INCF	_txring_out,W
 	BANKSEL	r0x1013
 	MOVWF	r0x1013
@@ -325,11 +339,11 @@ _intr	;Function start
 ;;	721 register type nRegs=1
 ;; ***	aopForSym 350
 ;;	361 sym->rname = _txring_out, size = 1
-;; 	line = 3754 result AOP_DIR=_txring_out, size=1, left AOP_REG=r0x104D, size=1, right AOP_LIT=0x0f, size=1
+;; 	line = 3754 result AOP_DIR=_txring_out, size=1, left AOP_REG=r0x104F, size=1, right AOP_LIT=0x0f, size=1
 ; >>> gen.c:3952:genAnd
 	MOVLW	0x0f
 ; >>> gen.c:3953:genAnd
-;;	1109 rIdx = r0x104D 
+;;	1109 rIdx = r0x104F 
 	ANDWF	r0x1013,W
 ; >>> gen.c:3954:genAnd
 ;;	1013
@@ -348,7 +362,7 @@ _intr	;Function start
 ;;	721 register type nRegs=2
 ;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
 ;;	_txring
-;; 	line = 554 result AOP_REG=r0x104D, size=2, left AOP_PCODE=_txring, size=2, right AOP_DIR=_txring_out, size=1
+;; 	line = 554 result AOP_REG=r0x104F, size=2, left AOP_PCODE=_txring, size=2, right AOP_DIR=_txring_out, size=1
 ;; ***	pic14_getDataSize  1426
 ;; genarith.c:142:genPlusIncr *{*
 ;; ***	genPlusIncr  144
@@ -360,12 +374,12 @@ _intr	;Function start
 ; >>> genarith.c:662:genPlus
 ;;	1013
 ;;	1029  _txring_out   offset=0
-	.line	42; "pvsuck.c"	TXREG = txring[txring_out];
+	.line	74; "pvsuck.c"	TXREG = txring[txring_out];
 	MOVF	_txring_out,W
 ; >>> genarith.c:671:genPlus
 	ADDLW	(_txring + 0)
 ; >>> genarith.c:672:genPlus
-;;	1109 rIdx = r0x104D 
+;;	1109 rIdx = r0x104F 
 	BANKSEL	r0x1013
 	MOVWF	r0x1013
 ; >>> genarith.c:735:genPlus
@@ -375,7 +389,7 @@ _intr	;Function start
 ; >>> genarith.c:737:genPlus
 	ADDLW	0x01
 ; >>> genarith.c:738:genPlus
-;;	1109 rIdx = r0x104E 
+;;	1109 rIdx = r0x1050 
 	MOVWF	r0x1014
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:5608:genPointerGet *{*
@@ -389,7 +403,7 @@ _intr	;Function start
 ;; gen.c:1324:mov2w_op *{*
 ;; ***	mov2w  1356  offset=0
 ; >>> gen.c:1361:mov2w
-;;	1109 rIdx = r0x104D 
+;;	1109 rIdx = r0x104F 
 	MOVF	r0x1013,W
 ; >>> gen.c:5146:setup_fsr
 	MOVWF	FSR
@@ -416,7 +430,7 @@ _intr	;Function start
 ;; gen.c:2435:genEndFunction *{*
 ;; ***	genEndFunction  2437
 ; >>> gen.c:2508:genEndFunction
-_00118_DS_
+_00130_DS_
 	BANKSEL	___sdcc_saved_fsr
 	MOVF	___sdcc_saved_fsr,W
 ; >>> gen.c:2509:genEndFunction
@@ -452,10 +466,8 @@ code_pvsuck	code
 ;functions called:
 ;   _serial_setup_19200
 ;   _print
-;   _delay
 ;   _serial_setup_19200
 ;   _print
-;   _delay
 ;5 compiler assigned registers:
 ;   r0x101C
 ;   r0x101D
@@ -468,7 +480,7 @@ code_pvsuck	code
 ;; ***	genLabel  2600
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:2283:genFunction *{*
-;; ***	genFunction  2285 curr label offset=26previous max_key=12 
+;; ***	genFunction  2285 curr label offset=38previous max_key=12 
 _main	;Function start
 ; 2 exit points
 ;; gen.c:2261:resultRemat *{*
@@ -481,7 +493,7 @@ _main	;Function start
 ; >>> gen.c:6443:genAssign
 ;;	1013
 ;;	1029  _TRISB   offset=0
-	.line	62; "pvsuck.c"	TRISB = 0;
+	.line	98; "pvsuck.c"	TRISB = 0;
 	BANKSEL	_TRISB
 	CLRF	_TRISB
 ;; gen.c:2261:resultRemat *{*
@@ -490,7 +502,7 @@ _main	;Function start
 ;; gen.c:1765:saveRegisters *{*
 ;; ***	saveRegisters  1767
 ; >>> gen.c:2118:genCall
-	.line	63; "pvsuck.c"	serial_setup_19200();
+	.line	100; "pvsuck.c"	serial_setup_19200();
 	CALL	_serial_setup_19200
 ;; gen.c:1809:unsaveRegisters *{*
 ;; ***	unsaveRegisters  1811
@@ -507,27 +519,27 @@ _main	;Function start
 ;;	721 register type nRegs=3
 ;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
 ;;	__str_0
-;; 	line = 6530 result AOP_REG=r0x1059, size=3, left -=-, size=0, right AOP_PCODE=__str_0, size=2
+;; 	line = 6530 result AOP_REG=r0x105B, size=3, left -=-, size=0, right AOP_PCODE=__str_0, size=2
 ;; ***	genCast  6563
 ;; gen.c:1324:mov2w_op *{*
 ; >>> gen.c:1339:mov2w_op
-_00144_DS_
-	.line	65; "pvsuck.c"	print("Hello World\n");
+_00156_DS_
+	.line	103; "pvsuck.c"	print(" Hello World\n");
 	MOVLW	high (__str_0 + 0)
 ; >>> gen.c:1367:movwf
-;;	1109 rIdx = r0x105A 
+;;	1109 rIdx = r0x105C 
 	BANKSEL	r0x101C
 	MOVWF	r0x101C
 ;; gen.c:1324:mov2w_op *{*
 ; >>> gen.c:1339:mov2w_op
 	MOVLW	(__str_0 + 0)
 ; >>> gen.c:1367:movwf
-;;	1109 rIdx = r0x1059 
+;;	1109 rIdx = r0x105B 
 	MOVWF	r0x101D
 ; >>> gen.c:6620:genCast
 	MOVLW	0x80
 ; >>> gen.c:1367:movwf
-;;	1109 rIdx = r0x105B 
+;;	1109 rIdx = r0x105D 
 	MOVWF	r0x101E
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:2261:resultRemat *{*
@@ -541,7 +553,7 @@ _00144_DS_
 ;; gen.c:1324:mov2w_op *{*
 ;; ***	mov2w  1356  offset=0
 ; >>> gen.c:1361:mov2w
-;;	1109 rIdx = r0x1059 
+;;	1109 rIdx = r0x105B 
 	MOVF	r0x101D,W
 ;; 	2079 left AOP_REG
 ; >>> gen.c:2087:genCall
@@ -550,7 +562,7 @@ _00144_DS_
 ;; gen.c:1324:mov2w_op *{*
 ;; ***	mov2w  1356  offset=1
 ; >>> gen.c:1361:mov2w
-;;	1109 rIdx = r0x105A 
+;;	1109 rIdx = r0x105C 
 	MOVF	r0x101C,W
 ;; 	2079 left AOP_REG
 ; >>> gen.c:2087:genCall
@@ -559,39 +571,17 @@ _00144_DS_
 ;; gen.c:1324:mov2w_op *{*
 ;; ***	mov2w  1356  offset=2
 ; >>> gen.c:1361:mov2w
-;;	1109 rIdx = r0x105B 
+;;	1109 rIdx = r0x105D 
 	MOVF	r0x101E,W
 ; >>> gen.c:2118:genCall
 	CALL	_print
 ;; gen.c:1809:unsaveRegisters *{*
 ;; ***	unsaveRegisters  1811
 ;; gen.c:2261:resultRemat *{*
-;; gen.c:2261:resultRemat *{*
-;; gen.c:2030:genCall *{*
-;; ***	genCall  2032
-;; gen.c:1765:saveRegisters *{*
-;; ***	saveRegisters  1767
-;; 	2079 left AOP_LIT
-;; gen.c:1324:mov2w_op *{*
-; >>> gen.c:1339:mov2w_op
-	.line	66; "pvsuck.c"	delay(1000);
-	MOVLW	0xe8
-;; 	2079 left AOP_LIT
-; >>> gen.c:2087:genCall
-;; ***	popRegFromIdx,1043  , rIdx=0x7f
-	MOVWF	STK00
-;; gen.c:1324:mov2w_op *{*
-; >>> gen.c:1339:mov2w_op
-	MOVLW	0x03
-; >>> gen.c:2118:genCall
-	CALL	_delay
-;; gen.c:1809:unsaveRegisters *{*
-;; ***	unsaveRegisters  1811
-;; gen.c:2261:resultRemat *{*
 ;; gen.c:2614:genGoto *{*
 ; >>> gen.c:2616:genGoto
-;; ***	popGetLabel  key=2, label offset 42
-	GOTO	_00144_DS_
+;; ***	popGetLabel  key=2, label offset 54
+	GOTO	_00156_DS_
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:2597:genLabel *{*
 ;; ***	genLabel  2600
@@ -628,7 +618,7 @@ _00144_DS_
 ;; ***	genLabel  2600
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:2283:genFunction *{*
-;; ***	genFunction  2285 curr label offset=13previous max_key=9 
+;; ***	genFunction  2285 curr label offset=25previous max_key=9 
 _print	;Function start
 ; 2 exit points
 ;; gen.c:2261:resultRemat *{*
@@ -637,30 +627,30 @@ _print	;Function start
 ;;	721 register type nRegs=3
 ;; gen.c:1866:assignResultValue *{*
 ;; ***	assignResultValue  1868
-;; 	line = 1870 result -=-, size=0, left AOP_REG=r0x1052, size=3, right -=-, size=0
+;; 	line = 1870 result -=-, size=0, left AOP_REG=r0x1054, size=3, right -=-, size=0
 ; >>> gen.c:1367:movwf
-;;	1109 rIdx = r0x1054 
-	.line	47; "pvsuck.c"	void print(char* p) {
+;;	1109 rIdx = r0x1056 
+	.line	85; "pvsuck.c"	void print(char* p) { unsigned char c; while(c = *p) { unsigned char txring_next = (txring_in + 1) & (RING_SZ-1);
 	BANKSEL	r0x1015
 	MOVWF	r0x1015
 ; >>> gen.c:1393:get_returnvalue
 ;; ***	popRegFromIdx,1043  , rIdx=0x7f
 	MOVF	STK00,W
 ; >>> gen.c:1367:movwf
-;;	1109 rIdx = r0x1053 
+;;	1109 rIdx = r0x1055 
 	MOVWF	r0x1016
 ; >>> gen.c:1393:get_returnvalue
 ;; ***	popRegFromIdx,1043  , rIdx=0x7e
 	MOVF	STK01,W
 ; >>> gen.c:1367:movwf
-;;	1109 rIdx = r0x1052 
+;;	1109 rIdx = r0x1054 
 	MOVWF	r0x1017
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:6332:genAssign *{*
 ;; ***	genAssign  6333
 ;;	721 register type nRegs=3
 ;;	721 register type nRegs=3
-;; 	line = 6342 result AOP_REG=r0x1052, size=3, left -=-, size=0, right AOP_REG=r0x1052, size=3
+;; 	line = 6342 result AOP_REG=r0x1054, size=3, left -=-, size=0, right AOP_REG=r0x1054, size=3
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:2597:genLabel *{*
 ;; ***	genLabel  2600
@@ -671,12 +661,11 @@ _print	;Function start
 ;; ***	genGenPointerGet  5497
 ;;	721 register type nRegs=3
 ;;	721 register type nRegs=1
-;; 	line = 5502 result AOP_REG=r0x1055, size=1, left AOP_REG=r0x1052, size=3, right -=-, size=0
+;; 	line = 5502 result AOP_REG=r0x1057, size=1, left AOP_REG=r0x1054, size=3, right -=-, size=0
 ;; ***	mov2w  1356  offset=0
 ; >>> gen.c:1361:mov2w
-;;	1109 rIdx = r0x1052 
-_00129_DS_
-	.line	49; "pvsuck.c"	while(c = *p) {
+;;	1109 rIdx = r0x1054 
+_00141_DS_
 	BANKSEL	r0x1017
 	MOVF	r0x1017,W
 ; >>> gen.c:5521:genGenPointerGet
@@ -684,14 +673,14 @@ _00129_DS_
 	MOVWF	STK01
 ;; ***	mov2w  1356  offset=1
 ; >>> gen.c:1361:mov2w
-;;	1109 rIdx = r0x1053 
+;;	1109 rIdx = r0x1055 
 	MOVF	r0x1016,W
 ; >>> gen.c:5523:genGenPointerGet
 ;; ***	popRegFromIdx,1043  , rIdx=0x7f
 	MOVWF	STK00
 ;; ***	mov2w  1356  offset=2
 ; >>> gen.c:1361:mov2w
-;;	1109 rIdx = r0x1054 
+;;	1109 rIdx = r0x1056 
 	MOVF	r0x1015,W
 ; >>> gen.c:1402:call_libraryfunc
 	PAGESEL	__gptrget1
@@ -700,7 +689,7 @@ _00129_DS_
 ; >>> gen.c:1406:call_libraryfunc
 	PAGESEL	$
 ; >>> gen.c:1367:movwf
-;;	1109 rIdx = r0x1055 
+;;	1109 rIdx = r0x1057 
 	BANKSEL	r0x1018
 	MOVWF	r0x1018
 	MOVWF	r0x1019
@@ -713,15 +702,15 @@ _00129_DS_
 	MOVF	r0x1018,W
 	BTFSC	STATUS,2
 ; >>> gen.c:6237:genIfx
-;; ***	popGetLabel  key=6, label offset 26
-	GOTO	_00132_DS_
+;; ***	popGetLabel  key=6, label offset 38
+	GOTO	_00144_DS_
 ;; gen.c:2261:resultRemat *{*
 ;; ***	genPlus  547
 ;; genarith.c:548:genPlus *{*
 ;; ***	aopForSym 350
 ;;	361 sym->rname = _txring_in, size = 1
 ;;	721 register type nRegs=1
-;; 	line = 554 result AOP_REG=r0x1055, size=1, left AOP_DIR=_txring_in, size=1, right AOP_LIT=0x01, size=1
+;; 	line = 554 result AOP_REG=r0x1057, size=1, left AOP_DIR=_txring_in, size=1, right AOP_LIT=0x01, size=1
 ;; ***	pic14_getDataSize  1426
 ;; genarith.c:142:genPlusIncr *{*
 ;; ***	genPlusIncr  144
@@ -739,12 +728,11 @@ _00129_DS_
 ; >>> genarith.c:473:genAddLit
 ;;	1013
 ;;	1029  _txring_in   offset=0
-	.line	50; "pvsuck.c"	unsigned char txring_next = (txring_in + 1) & (RING_SZ-1);
 	BANKSEL	_txring_in
 	INCF	_txring_in,W
 ;; genarith.c:253:emitMOVWF *{*
 ; >>> genarith.c:257:emitMOVWF
-;;	1109 rIdx = r0x1055 
+;;	1109 rIdx = r0x1057 
 	BANKSEL	r0x1018
 	MOVWF	r0x1018
 ;; ***	pic14_getDataSize  1426
@@ -760,11 +748,11 @@ _00129_DS_
 ;; ***	genAnd  3720
 ;;	721 register type nRegs=1
 ;;	721 register type nRegs=1
-;; 	line = 3754 result AOP_REG=r0x1055, size=1, left AOP_REG=r0x1055, size=1, right AOP_LIT=0x0f, size=1
+;; 	line = 3754 result AOP_REG=r0x1057, size=1, left AOP_REG=r0x1057, size=1, right AOP_LIT=0x0f, size=1
 ; >>> gen.c:3902:genAnd
 	MOVLW	0x0f
 ; >>> gen.c:3904:genAnd
-;;	1109 rIdx = r0x1055 
+;;	1109 rIdx = r0x1057 
 	ANDWF	r0x1018,F
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:3504:ifxForOp *{*
@@ -775,25 +763,25 @@ _00129_DS_
 ;;	721 register type nRegs=1
 ;; ***	aopForSym 350
 ;;	361 sym->rname = _txring_out, size = 1
-;; 	line = 3400 result AOP_CRY=0x00, size=0, left AOP_REG=r0x1055, size=1, right AOP_DIR=_txring_out, size=1
+;; 	line = 3400 result AOP_CRY=0x00, size=0, left AOP_REG=r0x1057, size=1, right AOP_DIR=_txring_out, size=1
 ;; ***	mov2w  1356  offset=0
 ; >>> gen.c:1361:mov2w
 ;;	1013
 ;;	1029  _txring_out   offset=0
-	.line	51; "pvsuck.c"	if (txring_next != txring_out) {
+	.line	86; "pvsuck.c"	if (txring_next != txring_out) {
 	BANKSEL	_txring_out
 	MOVF	_txring_out,W
 ; >>> gen.c:3469:genCmpEq
-;;	1109 rIdx = r0x1055 
-	.line	52; "pvsuck.c"	txring[txring_next] = c;
+;;	1109 rIdx = r0x1057 
+	.line	87; "pvsuck.c"	txring[txring_next] = c;
 	BANKSEL	r0x1018
 	XORWF	r0x1018,W
 	BTFSC	STATUS,2
-	GOTO	_00129_DS_
+	GOTO	_00141_DS_
 	MOVF	r0x1018,W
 	ADDLW	(_txring + 0)
 ; >>> genarith.c:672:genPlus
-;;	1109 rIdx = r0x1057 
+;;	1109 rIdx = r0x1059 
 	MOVWF	r0x101A
 ; >>> genarith.c:735:genPlus
 	MOVLW	high (_txring + 0)
@@ -802,7 +790,7 @@ _00129_DS_
 ; >>> genarith.c:737:genPlus
 	ADDLW	0x01
 ; >>> genarith.c:738:genPlus
-;;	1109 rIdx = r0x1058 
+;;	1109 rIdx = r0x105A 
 	MOVWF	r0x101B
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:6117:genPointerSet *{*
@@ -812,11 +800,11 @@ _00129_DS_
 ;;	721 register type nRegs=2
 ;; ***	genNearPointerSet  5963
 ;;	721 register type nRegs=1
-;; 	line = 5965 result AOP_REG=r0x1057, size=2, left -=-, size=0, right AOP_REG=r0x1056, size=1
+;; 	line = 5965 result AOP_REG=r0x1059, size=2, left -=-, size=0, right AOP_REG=r0x1058, size=1
 ;; gen.c:1324:mov2w_op *{*
 ;; ***	mov2w  1356  offset=0
 ; >>> gen.c:1361:mov2w
-;;	1109 rIdx = r0x1057 
+;;	1109 rIdx = r0x1059 
 	MOVF	r0x101A,W
 ; >>> gen.c:5146:setup_fsr
 	MOVWF	FSR
@@ -829,7 +817,7 @@ _00129_DS_
 	BSF	STATUS,7
 ;; ***	genNearPointerSet  5992
 ; >>> gen.c:6001:genNearPointerSet
-;;	1109 rIdx = r0x1056 
+;;	1109 rIdx = r0x1058 
 	MOVF	r0x1019,W
 ; >>> gen.c:6006:genNearPointerSet
 	MOVWF	INDF
@@ -842,13 +830,13 @@ _00129_DS_
 ;;	721 register type nRegs=1
 ;; ***	aopForSym 350
 ;;	361 sym->rname = _txring_in, size = 1
-;; 	line = 6342 result AOP_DIR=_txring_in, size=1, left -=-, size=0, right AOP_REG=r0x1055, size=1
+;; 	line = 6342 result AOP_DIR=_txring_in, size=1, left -=-, size=0, right AOP_REG=r0x1057, size=1
 ;; ***	genAssign  6434
 ;; gen.c:1324:mov2w_op *{*
 ;; ***	mov2w  1356  offset=0
 ; >>> gen.c:1361:mov2w
-;;	1109 rIdx = r0x1055 
-	.line	53; "pvsuck.c"	txring_in = txring_next;
+;;	1109 rIdx = r0x1057 
+	.line	88; "pvsuck.c"	txring_in = txring_next;
 	MOVF	r0x1018,W
 ; >>> gen.c:6453:genAssign
 ;;	1013
@@ -861,7 +849,7 @@ _00129_DS_
 ;; gen.c:1765:saveRegisters *{*
 ;; ***	saveRegisters  1767
 ; >>> gen.c:2118:genCall
-	.line	54; "pvsuck.c"	intr(); // call here to prime if empty tx buffer
+	.line	89; "pvsuck.c"	intr(); // call here to prime if empty tx buffer
 	CALL	_intr
 ;; gen.c:1809:unsaveRegisters *{*
 ;; ***	unsaveRegisters  1811
@@ -870,7 +858,7 @@ _00129_DS_
 ;; genarith.c:548:genPlus *{*
 ;;	721 register type nRegs=3
 ;;	606
-;; 	line = 554 result AOP_REG=r0x1052, size=3, left AOP_REG=r0x1052, size=3, right AOP_LIT=0x01, size=1
+;; 	line = 554 result AOP_REG=r0x1054, size=3, left AOP_REG=r0x1054, size=3, right AOP_LIT=0x01, size=1
 ;; ***	pic14_getDataSize  1426
 ;; ***	pic14_getDataSize  1446
 ;; genarith.c:142:genPlusIncr *{*
@@ -878,29 +866,284 @@ _00129_DS_
 ;; 	result AOP_REG, left AOP_REG, right AOP_LIT
 ;; 	genPlusIncr  156
 ; >>> genarith.c:168:genPlusIncr
-;;	1109 rIdx = r0x1052 
-	.line	55; "pvsuck.c"	p++;
+;;	1109 rIdx = r0x1054 
+	.line	90; "pvsuck.c"	p++;
 	BANKSEL	r0x1017
 	INCF	r0x1017,F
 ; >>> genarith.c:172:genPlusIncr
 	BTFSC	STATUS,2
 ; >>> genarith.c:173:genPlusIncr
-;;	1109 rIdx = r0x1053 
+;;	1109 rIdx = r0x1055 
 	INCF	r0x1016,F
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:2614:genGoto *{*
 ; >>> gen.c:2616:genGoto
-;; ***	popGetLabel  key=3, label offset 26
-	GOTO	_00129_DS_
+;; ***	popGetLabel  key=3, label offset 38
+	GOTO	_00141_DS_
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:2597:genLabel *{*
 ;; ***	genLabel  2600
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:2435:genEndFunction *{*
 ;; ***	genEndFunction  2437
-_00132_DS_
+_00144_DS_
 	RETURN	
 ; exit point of _print
+;; gen.c:6803:genpic14Code *{*
+
+;***
+;  pBlock Stats: dbName = C
+;***
+;entry:  _ad_monitor	;Function start
+; 2 exit points
+;has an exit
+;; Starting pCode block
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2597:genLabel *{*
+;; ***	genLabel  2600
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2283:genFunction *{*
+;; ***	genFunction  2285 curr label offset=17previous max_key=0 
+_ad_monitor	;Function start
+; 2 exit points
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2261:resultRemat *{*
+;; gen.c:6117:genPointerSet *{*
+;; ***	genPointerSet  6118
+;; gen.c:5945:genNearPointerSet *{*
+;; ***	genNearPointerSet  5946
+;;	641
+;;	aopForRemat 425
+;;	446: rname _ADCON0_bits, val 0, const = 0
+;; ***	genNearPointerSet  5963
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+;; 	line = 5965 result AOP_PCODE=_ADCON0_bits, size=2, left -=-, size=0, right AOP_LIT=0x00, size=1
+;; gen.c:5694:genPackBits *{*
+;; ***	genPackBits  5695
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+; >>> gen.c:5720:genPackBits
+	.line	64; "pvsuck.c"	CHS0 = 0;
+	BANKSEL	_ADCON0_bits
+	BCF	_ADCON0_bits,3
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2261:resultRemat *{*
+;; gen.c:6117:genPointerSet *{*
+;; ***	genPointerSet  6118
+;; gen.c:5945:genNearPointerSet *{*
+;; ***	genNearPointerSet  5946
+;;	641
+;;	aopForRemat 425
+;;	446: rname _ADCON0_bits, val 0, const = 0
+;; ***	genNearPointerSet  5963
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+;; 	line = 5965 result AOP_PCODE=_ADCON0_bits, size=2, left -=-, size=0, right AOP_LIT=0x00, size=1
+;; gen.c:5694:genPackBits *{*
+;; ***	genPackBits  5695
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+; >>> gen.c:5720:genPackBits
+	.line	65; "pvsuck.c"	CHS1 = 0;
+	BCF	_ADCON0_bits,4
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2261:resultRemat *{*
+;; gen.c:6117:genPointerSet *{*
+;; ***	genPointerSet  6118
+;; gen.c:5945:genNearPointerSet *{*
+;; ***	genNearPointerSet  5946
+;;	641
+;;	aopForRemat 425
+;;	446: rname _ADCON0_bits, val 0, const = 0
+;; ***	genNearPointerSet  5963
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+;; 	line = 5965 result AOP_PCODE=_ADCON0_bits, size=2, left -=-, size=0, right AOP_LIT=0x01, size=1
+;; gen.c:5694:genPackBits *{*
+;; ***	genPackBits  5695
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+; >>> gen.c:5720:genPackBits
+	.line	66; "pvsuck.c"	GO   = 1;
+	BSF	_ADCON0_bits,2
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2597:genLabel *{*
+;; ***	genLabel  2600
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2435:genEndFunction *{*
+;; ***	genEndFunction  2437
+	RETURN	
+; exit point of _ad_monitor
+;; gen.c:6803:genpic14Code *{*
+
+;***
+;  pBlock Stats: dbName = C
+;***
+;entry:  _ad_aquire	;Function start
+; 2 exit points
+;has an exit
+;2 compiler assigned registers:
+;   r0x101F
+;   r0x1020
+;; Starting pCode block
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2597:genLabel *{*
+;; ***	genLabel  2600
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2283:genFunction *{*
+;; ***	genFunction  2285 curr label offset=13previous max_key=0 
+_ad_aquire	;Function start
+; 2 exit points
+;; gen.c:2261:resultRemat *{*
+;; gen.c:6739:genReceive *{*
+;; ***	genReceive  6740
+;;	721 register type nRegs=1
+;; gen.c:1866:assignResultValue *{*
+;; ***	assignResultValue  1868
+;; 	line = 1870 result -=-, size=0, left AOP_REG=r0x104C, size=1, right -=-, size=0
+; >>> gen.c:1367:movwf
+;;	1109 rIdx = r0x104C 
+	.line	55; "pvsuck.c"	void ad_aquire( unsigned char chan ) {
+	BANKSEL	r0x101F
+	MOVWF	r0x101F
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2261:resultRemat *{*
+;; gen.c:3504:ifxForOp *{*
+;; ***	ifxForOp  3506
+;; NULL :(	3526
+;; gen.c:3719:genAnd *{*
+;; ***	genAnd  3720
+;;	721 register type nRegs=1
+;;	721 register type nRegs=1
+;; 	line = 3754 result AOP_REG=r0x104D, size=1, left AOP_REG=r0x104C, size=1, right AOP_LIT=0x01, size=1
+; >>> gen.c:3952:genAnd
+	.line	56; "pvsuck.c"	CHS0 = (chan & 0x01);
+	MOVLW	0x01
+; >>> gen.c:3953:genAnd
+;;	1109 rIdx = r0x104C 
+	ANDWF	r0x101F,W
+; >>> gen.c:3954:genAnd
+;;	1109 rIdx = r0x104D 
+	MOVWF	r0x1020
+;; gen.c:2261:resultRemat *{*
+;; gen.c:6117:genPointerSet *{*
+;; ***	genPointerSet  6118
+;; gen.c:5945:genNearPointerSet *{*
+;; ***	genNearPointerSet  5946
+;;	641
+;;	aopForRemat 425
+;;	446: rname _ADCON0_bits, val 0, const = 0
+;; ***	genNearPointerSet  5963
+;;	721 register type nRegs=1
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+;; 	line = 5965 result AOP_PCODE=_ADCON0_bits, size=2, left -=-, size=0, right AOP_REG=r0x104D, size=1
+;; gen.c:5694:genPackBits *{*
+;; ***	genPackBits  5695
+; >>> gen.c:5793:genPackBits
+;;	1109 rIdx = r0x104D 
+	RRF	r0x1020,W
+; >>> gen.c:5794:genPackBits
+	BTFSC	STATUS,0
+	GOTO	_00001_DS_
+; >>> gen.c:5795:genPackBits
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+	BANKSEL	_ADCON0_bits
+	BCF	_ADCON0_bits,3
+; >>> gen.c:5796:genPackBits
+_00001_DS_
+	BTFSS	STATUS,0
+	GOTO	_00002_DS_
+; >>> gen.c:5797:genPackBits
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+	BANKSEL	_ADCON0_bits
+	BSF	_ADCON0_bits,3
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2261:resultRemat *{*
+;; gen.c:3504:ifxForOp *{*
+;; ***	ifxForOp  3506
+;; NULL :(	3526
+;; gen.c:3719:genAnd *{*
+;; ***	genAnd  3720
+;;	721 register type nRegs=1
+;;	721 register type nRegs=1
+;; 	line = 3754 result AOP_REG=r0x104C, size=1, left AOP_REG=r0x104C, size=1, right AOP_LIT=0x02, size=1
+; >>> gen.c:3902:genAnd
+_00002_DS_
+	.line	57; "pvsuck.c"	CHS1 = (chan & 0x02) ? 1 : 0;
+	MOVLW	0x02
+; >>> gen.c:3904:genAnd
+;;	1109 rIdx = r0x104C 
+	BANKSEL	r0x101F
+	ANDWF	r0x101F,F
+;; gen.c:2261:resultRemat *{*
+;; gen.c:6117:genPointerSet *{*
+;; ***	genPointerSet  6118
+;; gen.c:5945:genNearPointerSet *{*
+;; ***	genNearPointerSet  5946
+;;	641
+;;	aopForRemat 425
+;;	446: rname _ADCON0_bits, val 0, const = 0
+;; ***	genNearPointerSet  5963
+;;	721 register type nRegs=1
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+;; 	line = 5965 result AOP_PCODE=_ADCON0_bits, size=2, left -=-, size=0, right AOP_REG=r0x104C, size=1
+;; gen.c:5694:genPackBits *{*
+;; ***	genPackBits  5695
+; >>> gen.c:5793:genPackBits
+;;	1109 rIdx = r0x104C 
+	RRF	r0x101F,W
+; >>> gen.c:5794:genPackBits
+	BTFSC	STATUS,0
+	GOTO	_00003_DS_
+; >>> gen.c:5795:genPackBits
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+	BANKSEL	_ADCON0_bits
+	BCF	_ADCON0_bits,4
+; >>> gen.c:5796:genPackBits
+_00003_DS_
+	BTFSS	STATUS,0
+	GOTO	_00004_DS_
+; >>> gen.c:5797:genPackBits
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+	BANKSEL	_ADCON0_bits
+	BSF	_ADCON0_bits,4
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2261:resultRemat *{*
+;; gen.c:6117:genPointerSet *{*
+;; ***	genPointerSet  6118
+;; gen.c:5945:genNearPointerSet *{*
+;; ***	genNearPointerSet  5946
+;;	641
+;;	aopForRemat 425
+;;	446: rname _ADCON0_bits, val 0, const = 0
+;; ***	genNearPointerSet  5963
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+;; 	line = 5965 result AOP_PCODE=_ADCON0_bits, size=2, left -=-, size=0, right AOP_LIT=0x01, size=1
+;; gen.c:5694:genPackBits *{*
+;; ***	genPackBits  5695
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+; >>> gen.c:5720:genPackBits
+_00004_DS_
+	.line	58; "pvsuck.c"	GO   = 1;
+	BANKSEL	_ADCON0_bits
+	BSF	_ADCON0_bits,2
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2597:genLabel *{*
+;; ***	genLabel  2600
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2435:genEndFunction *{*
+;; ***	genEndFunction  2437
+	RETURN	
+; exit point of _ad_aquire
 ;; gen.c:6803:genpic14Code *{*
 
 ;***
@@ -915,7 +1158,7 @@ _00132_DS_
 ;; ***	genLabel  2600
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:2283:genFunction *{*
-;; ***	genFunction  2285 curr label offset=4previous max_key=1 
+;; ***	genFunction  2285 curr label offset=9previous max_key=0 
 _serial_setup_19200	;Function start
 ; 2 exit points
 ;; gen.c:2261:resultRemat *{*
@@ -926,7 +1169,7 @@ _serial_setup_19200	;Function start
 ;; 	line = 6342 result AOP_DIR=_SPBRG, size=1, left -=-, size=0, right AOP_LIT=0x0c, size=1
 ;; ***	genAssign  6434
 ; >>> gen.c:6439:genAssign
-	.line	21; "pvsuck.c"	SPBRG = 12; // 4MHz = > 19200 baud
+	.line	38; "pvsuck.c"	SPBRG = 12; // 4MHz = > 19200 baud
 	MOVLW	0x0c
 ; >>> gen.c:6441:genAssign
 ;;	1013
@@ -951,7 +1194,7 @@ _serial_setup_19200	;Function start
 ;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
 ;;	_TXSTA_bits
 ; >>> gen.c:5720:genPackBits
-	.line	22; "pvsuck.c"	BRGH  = 1;
+	.line	39; "pvsuck.c"	BRGH  = 1;
 	BSF	_TXSTA_bits,2
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:2261:resultRemat *{*
@@ -971,7 +1214,7 @@ _serial_setup_19200	;Function start
 ;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
 ;;	_TXSTA_bits
 ; >>> gen.c:5720:genPackBits
-	.line	23; "pvsuck.c"	SYNC  = 0;
+	.line	40; "pvsuck.c"	SYNC  = 0;
 	BCF	_TXSTA_bits,4
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:2261:resultRemat *{*
@@ -991,7 +1234,7 @@ _serial_setup_19200	;Function start
 ;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
 ;;	_RCSTA_bits
 ; >>> gen.c:5720:genPackBits
-	.line	24; "pvsuck.c"	SPEN  = 1;
+	.line	41; "pvsuck.c"	SPEN  = 1;
 	BANKSEL	_RCSTA_bits
 	BSF	_RCSTA_bits,7
 ;; gen.c:2261:resultRemat *{*
@@ -1012,7 +1255,7 @@ _serial_setup_19200	;Function start
 ;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
 ;;	_PIE1_bits
 ; >>> gen.c:5720:genPackBits
-	.line	25; "pvsuck.c"	TXIE  = 1;
+	.line	42; "pvsuck.c"	TXIE  = 1;
 	BANKSEL	_PIE1_bits
 	BSF	_PIE1_bits,4
 ;; gen.c:2261:resultRemat *{*
@@ -1033,7 +1276,7 @@ _serial_setup_19200	;Function start
 ;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
 ;;	_TXSTA_bits
 ; >>> gen.c:5720:genPackBits
-	.line	28; "pvsuck.c"	TXEN = 1;
+	.line	45; "pvsuck.c"	TXEN = 1;
 	BSF	_TXSTA_bits,5
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:2261:resultRemat *{*
@@ -1053,7 +1296,7 @@ _serial_setup_19200	;Function start
 ;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
 ;;	_INTCON_bits
 ; >>> gen.c:5720:genPackBits
-	.line	29; "pvsuck.c"	GIE  = 1;
+	.line	46; "pvsuck.c"	GIE  = 1;
 	BANKSEL	_INTCON_bits
 	BSF	_INTCON_bits,7
 ;; gen.c:2261:resultRemat *{*
@@ -1074,7 +1317,7 @@ _serial_setup_19200	;Function start
 ;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
 ;;	_INTCON_bits
 ; >>> gen.c:5720:genPackBits
-	.line	30; "pvsuck.c"	PEIE = 1;
+	.line	47; "pvsuck.c"	PEIE = 1;
 	BSF	_INTCON_bits,6
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:2597:genLabel *{*
@@ -1089,15 +1332,257 @@ _serial_setup_19200	;Function start
 ;***
 ;  pBlock Stats: dbName = C
 ;***
+;entry:  _adc_setup	;Function start
+; 2 exit points
+;has an exit
+;; Starting pCode block
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2597:genLabel *{*
+;; ***	genLabel  2600
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2283:genFunction *{*
+;; ***	genFunction  2285 curr label offset=4previous max_key=1 
+_adc_setup	;Function start
+; 2 exit points
+;; gen.c:2261:resultRemat *{*
+;; gen.c:6332:genAssign *{*
+;; ***	genAssign  6333
+;; ***	aopForSym 350
+;;	361 sym->rname = _TRISA, size = 1
+;; 	line = 6342 result AOP_DIR=_TRISA, size=1, left -=-, size=0, right AOP_LIT=0x03, size=1
+;; ***	genAssign  6434
+; >>> gen.c:6439:genAssign
+	.line	20; "pvsuck.c"	TRISA = 0x03; // signal input on pA0 and pA1
+	MOVLW	0x03
+; >>> gen.c:6441:genAssign
+;;	1013
+;;	1029  _TRISA   offset=0
+	BANKSEL	_TRISA
+	MOVWF	_TRISA
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2261:resultRemat *{*
+;; gen.c:6117:genPointerSet *{*
+;; ***	genPointerSet  6118
+;; gen.c:5945:genNearPointerSet *{*
+;; ***	genNearPointerSet  5946
+;;	641
+;;	aopForRemat 425
+;;	446: rname _ADCON1_bits, val 0, const = 0
+;; ***	genNearPointerSet  5963
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON1_bits
+;; 	line = 5965 result AOP_PCODE=_ADCON1_bits, size=2, left -=-, size=0, right AOP_LIT=0x00, size=1
+;; gen.c:5694:genPackBits *{*
+;; ***	genPackBits  5695
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON1_bits
+; >>> gen.c:5720:genPackBits
+	.line	21; "pvsuck.c"	ADFM  = 0; // left justifed
+	BCF	_ADCON1_bits,7
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2261:resultRemat *{*
+;; gen.c:6117:genPointerSet *{*
+;; ***	genPointerSet  6118
+;; gen.c:5945:genNearPointerSet *{*
+;; ***	genNearPointerSet  5946
+;;	641
+;;	aopForRemat 425
+;;	446: rname _ADCON1_bits, val 0, const = 0
+;; ***	genNearPointerSet  5963
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON1_bits
+;; 	line = 5965 result AOP_PCODE=_ADCON1_bits, size=2, left -=-, size=0, right AOP_LIT=0x00, size=1
+;; gen.c:5694:genPackBits *{*
+;; ***	genPackBits  5695
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON1_bits
+; >>> gen.c:5720:genPackBits
+	.line	22; "pvsuck.c"	PCFG0 = 0; // pA0..3 analogue with vdd/vss ref
+	BCF	_ADCON1_bits,0
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2261:resultRemat *{*
+;; gen.c:6117:genPointerSet *{*
+;; ***	genPointerSet  6118
+;; gen.c:5945:genNearPointerSet *{*
+;; ***	genNearPointerSet  5946
+;;	641
+;;	aopForRemat 425
+;;	446: rname _ADCON1_bits, val 0, const = 0
+;; ***	genNearPointerSet  5963
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON1_bits
+;; 	line = 5965 result AOP_PCODE=_ADCON1_bits, size=2, left -=-, size=0, right AOP_LIT=0x00, size=1
+;; gen.c:5694:genPackBits *{*
+;; ***	genPackBits  5695
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON1_bits
+; >>> gen.c:5720:genPackBits
+	.line	23; "pvsuck.c"	PCFG1 = 0;
+	BCF	_ADCON1_bits,1
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2261:resultRemat *{*
+;; gen.c:6117:genPointerSet *{*
+;; ***	genPointerSet  6118
+;; gen.c:5945:genNearPointerSet *{*
+;; ***	genNearPointerSet  5946
+;;	641
+;;	aopForRemat 425
+;;	446: rname _ADCON1_bits, val 0, const = 0
+;; ***	genNearPointerSet  5963
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON1_bits
+;; 	line = 5965 result AOP_PCODE=_ADCON1_bits, size=2, left -=-, size=0, right AOP_LIT=0x01, size=1
+;; gen.c:5694:genPackBits *{*
+;; ***	genPackBits  5695
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON1_bits
+; >>> gen.c:5720:genPackBits
+	.line	24; "pvsuck.c"	PCFG2 = 1;
+	BSF	_ADCON1_bits,2
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2261:resultRemat *{*
+;; gen.c:6117:genPointerSet *{*
+;; ***	genPointerSet  6118
+;; gen.c:5945:genNearPointerSet *{*
+;; ***	genNearPointerSet  5946
+;;	641
+;;	aopForRemat 425
+;;	446: rname _ADCON1_bits, val 0, const = 0
+;; ***	genNearPointerSet  5963
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON1_bits
+;; 	line = 5965 result AOP_PCODE=_ADCON1_bits, size=2, left -=-, size=0, right AOP_LIT=0x00, size=1
+;; gen.c:5694:genPackBits *{*
+;; ***	genPackBits  5695
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON1_bits
+; >>> gen.c:5720:genPackBits
+	.line	25; "pvsuck.c"	PCFG3 = 0;
+	BCF	_ADCON1_bits,3
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2261:resultRemat *{*
+;; gen.c:6117:genPointerSet *{*
+;; ***	genPointerSet  6118
+;; gen.c:5945:genNearPointerSet *{*
+;; ***	genNearPointerSet  5946
+;;	641
+;;	aopForRemat 425
+;;	446: rname _ADCON0_bits, val 0, const = 0
+;; ***	genNearPointerSet  5963
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+;; 	line = 5965 result AOP_PCODE=_ADCON0_bits, size=2, left -=-, size=0, right AOP_LIT=0x01, size=1
+;; gen.c:5694:genPackBits *{*
+;; ***	genPackBits  5695
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+; >>> gen.c:5720:genPackBits
+	.line	27; "pvsuck.c"	ADON   = 1;
+	BANKSEL	_ADCON0_bits
+	BSF	_ADCON0_bits,0
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2261:resultRemat *{*
+;; gen.c:6117:genPointerSet *{*
+;; ***	genPointerSet  6118
+;; gen.c:5945:genNearPointerSet *{*
+;; ***	genNearPointerSet  5946
+;;	641
+;;	aopForRemat 425
+;;	446: rname _ADCON0_bits, val 0, const = 0
+;; ***	genNearPointerSet  5963
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+;; 	line = 5965 result AOP_PCODE=_ADCON0_bits, size=2, left -=-, size=0, right AOP_LIT=0x01, size=1
+;; gen.c:5694:genPackBits *{*
+;; ***	genPackBits  5695
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+; >>> gen.c:5720:genPackBits
+	.line	28; "pvsuck.c"	ADCS0  = 1; // f = 8tosc. 5Mhz max
+	BSF	_ADCON0_bits,6
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2261:resultRemat *{*
+;; gen.c:6117:genPointerSet *{*
+;; ***	genPointerSet  6118
+;; gen.c:5945:genNearPointerSet *{*
+;; ***	genNearPointerSet  5946
+;;	641
+;;	aopForRemat 425
+;;	446: rname _ADCON0_bits, val 0, const = 0
+;; ***	genNearPointerSet  5963
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+;; 	line = 5965 result AOP_PCODE=_ADCON0_bits, size=2, left -=-, size=0, right AOP_LIT=0x00, size=1
+;; gen.c:5694:genPackBits *{*
+;; ***	genPackBits  5695
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+; >>> gen.c:5720:genPackBits
+	.line	29; "pvsuck.c"	ADCS1  = 0;
+	BCF	_ADCON0_bits,7
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2261:resultRemat *{*
+;; gen.c:6117:genPointerSet *{*
+;; ***	genPointerSet  6118
+;; gen.c:5945:genNearPointerSet *{*
+;; ***	genNearPointerSet  5946
+;;	641
+;;	aopForRemat 425
+;;	446: rname _ADCON0_bits, val 0, const = 0
+;; ***	genNearPointerSet  5963
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+;; 	line = 5965 result AOP_PCODE=_ADCON0_bits, size=2, left -=-, size=0, right AOP_LIT=0x00, size=1
+;; gen.c:5694:genPackBits *{*
+;; ***	genPackBits  5695
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_ADCON0_bits
+; >>> gen.c:5720:genPackBits
+	.line	30; "pvsuck.c"	CHS2   = 0;
+	BCF	_ADCON0_bits,5
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2261:resultRemat *{*
+;; gen.c:6117:genPointerSet *{*
+;; ***	genPointerSet  6118
+;; gen.c:5945:genNearPointerSet *{*
+;; ***	genNearPointerSet  5946
+;;	641
+;;	aopForRemat 425
+;;	446: rname _PIE1_bits, val 0, const = 0
+;; ***	genNearPointerSet  5963
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_PIE1_bits
+;; 	line = 5965 result AOP_PCODE=_PIE1_bits, size=2, left -=-, size=0, right AOP_LIT=0x01, size=1
+;; gen.c:5694:genPackBits *{*
+;; ***	genPackBits  5695
+;;	858: aopGet AOP_PCODE type PO_IMMEDIATE
+;;	_PIE1_bits
+; >>> gen.c:5720:genPackBits
+	.line	32; "pvsuck.c"	ADIE   = 1;
+	BANKSEL	_PIE1_bits
+	BSF	_PIE1_bits,6
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2597:genLabel *{*
+;; ***	genLabel  2600
+;; gen.c:2261:resultRemat *{*
+;; gen.c:2435:genEndFunction *{*
+;; ***	genEndFunction  2437
+	RETURN	
+; exit point of _adc_setup
+;; gen.c:6803:genpic14Code *{*
+
+;***
+;  pBlock Stats: dbName = C
+;***
 ;entry:  _delay	;Function start
 ; 2 exit points
 ;has an exit
 ;5 compiler assigned registers:
-;   r0x1013
+;   r0x1021
 ;   STK00
-;   r0x1014
-;   r0x1015
-;   r0x1016
+;   r0x1022
+;   r0x1023
+;   r0x1024
 ;; Starting pCode block
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:2597:genLabel *{*
@@ -1117,14 +1602,14 @@ _delay	;Function start
 ; >>> gen.c:1367:movwf
 ;;	1109 rIdx = r0x1049 
 	.line	12; "pvsuck.c"	void delay(unsigned count) {
-	BANKSEL	r0x1013
-	MOVWF	r0x1013
+	BANKSEL	r0x1021
+	MOVWF	r0x1021
 ; >>> gen.c:1393:get_returnvalue
 ;; ***	popRegFromIdx,1043  , rIdx=0x7f
 	MOVF	STK00,W
 ; >>> gen.c:1367:movwf
 ;;	1109 rIdx = r0x1048 
-	MOVWF	r0x1014
+	MOVWF	r0x1022
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:6332:genAssign *{*
 ;; ***	genAssign  6333
@@ -1147,20 +1632,20 @@ _delay	;Function start
 ;;	1109 rIdx = r0x1048 
 _00105_DS_
 	.line	13; "pvsuck.c"	while (count--)  {
-	BANKSEL	r0x1014
-	MOVF	r0x1014,W
+	BANKSEL	r0x1022
+	MOVF	r0x1022,W
 ; >>> gen.c:6453:genAssign
 ;;	1109 rIdx = r0x104A 
-	MOVWF	r0x1015
+	MOVWF	r0x1023
 ;; ***	genAssign  6434
 ;; gen.c:1324:mov2w_op *{*
 ;; ***	mov2w  1356  offset=1
 ; >>> gen.c:1361:mov2w
 ;;	1109 rIdx = r0x1049 
-	MOVF	r0x1013,W
+	MOVF	r0x1021,W
 ; >>> gen.c:6453:genAssign
 ;;	1109 rIdx = r0x104B 
-	MOVWF	r0x1016
+	MOVWF	r0x1024
 ;; gen.c:2261:resultRemat *{*
 ;; gen.c:3504:ifxForOp *{*
 ;; ***	ifxForOp  3506
@@ -1184,12 +1669,12 @@ _00105_DS_
 	MOVLW	0xff
 ; >>> genarith.c:354:genAddLit
 ;;	1109 rIdx = r0x1048 
-	ADDWF	r0x1014,F
+	ADDWF	r0x1022,F
 ; >>> genarith.c:355:genAddLit
 	BTFSS	STATUS,0
 ; >>> genarith.c:356:genAddLit
 ;;	1109 rIdx = r0x1049 
-	DECF	r0x1013,F
+	DECF	r0x1021,F
 ;; ***	pic14_getDataSize  1426
 ;; ***	pic14_getDataSize  1426
 ;; ***	pic14_getDataSize  1426
@@ -1202,10 +1687,10 @@ _00105_DS_
 ;; ***	pic14_toBoolean  1500
 ; >>> gen.c:1509:pic14_toBoolean
 ;;	1109 rIdx = r0x104A 
-	MOVF	r0x1015,W
+	MOVF	r0x1023,W
 ; >>> gen.c:1514:pic14_toBoolean
 ;;	1109 rIdx = r0x104B 
-	IORWF	r0x1016,W
+	IORWF	r0x1024,W
 ; >>> gen.c:6233:genIfx
 	BTFSS	STATUS,2
 ; >>> gen.c:6234:genIfx
@@ -1224,6 +1709,6 @@ _00105_DS_
 
 
 ;	code size estimation:
-;	  136+   28 =   164 instructions (  384 byte)
+;	  171+   39 =   210 instructions (  498 byte)
 
 	end

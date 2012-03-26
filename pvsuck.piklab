@@ -3,14 +3,60 @@
   <general>
     <device>16F877</device>
     <tool>sdcc</tool>
-    <programmer>icd2_debugger</programmer>
+    <programmer>icd2</programmer>
     <files>
       <item>pvsuck.c</item>
     </files>
-    <watched_registers>
-      <item>6 2 </item>
-      <item>134 2 </item>
-    </watched_registers>
+    <description></description>
+    <version>0.1</version>
+    <output_type>executable</output_type>
   </general>
   <editors/>
+  <compiler>
+    <has_custom_arguments>false</has_custom_arguments>
+    <custom_arguments>
+      <item>-m%FAMILY</item>
+      <item>-%DEVICE</item>
+      <item>-V</item>
+      <item>--debug</item>
+      <item>-I$(SRCPATH)</item>
+      <item>-c</item>
+      <item>%I</item>
+    </custom_arguments>
+    <includes>
+      <item>$(SRCPATH)</item>
+    </includes>
+    <custom_options></custom_options>
+  </compiler>
+  <linker>
+    <has_custom_arguments>false</has_custom_arguments>
+    <custom_arguments>
+      <item>-m%FAMILY</item>
+      <item>-%DEVICE</item>
+      <item>-V</item>
+      <item>--debug</item>
+      <item>-Wl-c</item>
+      <item>-Wl-m</item>
+      <item>$LKR(-Wl-s%LKR)</item>
+      <item>-I$(SRCPATH)</item>
+      <item>-o%O</item>
+      <item>%OBJS</item>
+      <item>%LIBS</item>
+    </custom_arguments>
+    <includes>
+      <item>$(SRCPATH)</item>
+    </includes>
+    <custom_options></custom_options>
+    <format>inhx32</format>
+  </linker>
+  <librarian>
+    <has_custom_arguments>false</has_custom_arguments>
+    <custom_arguments>
+      <item>-c</item>
+      <item>%O</item>
+      <item>%OBJS</item>
+      <item>%LIBS</item>
+    </custom_arguments>
+    <custom_options></custom_options>
+  </librarian>
 </piklab>

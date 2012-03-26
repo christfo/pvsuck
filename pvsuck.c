@@ -15,6 +15,23 @@ void delay(unsigned count) {
     }
 }
 
+void adc_setup() {
+
+    TRISA = 0x03; // signal input on pA0 and pA1
+    ADFM  = 0; // left justifed
+    PCFG0 = 0; // pA0..3 analogue with vdd/vss ref
+    PCFG1 = 0;
+    PCFG2 = 1;
+    PCFG3 = 0;
+    
+    ADON   = 1;
+    ADCS0  = 1; // f = 8tosc. 5Mhz max
+    ADCS1  = 0;
+    CHS2   = 0;
+
+    ADIE   = 1;
+}
+
 void serial_setup_19200() {
 
     // Configure UART serial transmit
@@ -35,6 +52,21 @@ char txring[RING_SZ];
 unsigned char txring_in  = 0;
 unsigned char txring_out = 0;
 
+void ad_aquire( unsigned char chan ) {
+    CHS0 = (chan & 0x01);
+    CHS1 = (chan & 0x02) ? 1 : 0;
+    GO   = 1;
+}
+
+#define AD_INPUTS (2)
+unsigned char ad_result[2];
+void ad_monitor() {
+    CHS0 = 0;
+    CHS1 = 0;
+    GO   = 1;
+    // let the isr push the next one out
+}
+
 void intr() interrupt 0 {
     if(TXIF) { // serial interrupt
         if( txring_out != txring_in ) {
@@ -42,12 +74,15 @@ void intr() interrupt 0 {
             TXREG = txring[txring_out];
         }
     } 
+    if (ADIF) {
+        ADIF = 0;
+        ad_result[CHS0] = ADRESH;
+        CHS0 = !CHS0;
+        GO   = 1;
+    }
 }
 
-void print(char* p) {
-    unsigned char c;
-    while(c = *p) {
-        unsigned char txring_next = (txring_in + 1) & (RING_SZ-1);
+void print(char* p) { unsigned char c; while(c = *p) { unsigned char txring_next = (txring_in + 1) & (RING_SZ-1);
         if (txring_next != txring_out) {
             txring[txring_next] = c;
             txring_in = txring_next;
@@ -58,11 +93,15 @@ void print(char* p) {
 }
 
 // ----------------------------------------------------------------------------
+unsigned char ad[3] = { '1','4','\0' };
 void main(void) {
     TRISB = 0;
+    adc_setup();
     serial_setup_19200();
+    ad_monitor();
     while (1) {
-        print("Hello World\n");
-        delay(1000);
+        print(" Hello World\n");
+        print(ad);
     }
+
 }
